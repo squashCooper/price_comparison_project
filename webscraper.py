@@ -8,7 +8,7 @@ from sqlalchemy.engine import URL
 from sqlalchemy import create_engine, Table, Column, String, MetaData
 import time
 
-# Connect to database
+# connect to database
 url_object = URL.create(
     "postgresql",
     username="XXXXXXX",
@@ -19,9 +19,10 @@ url_object = URL.create(
 
 engine = create_engine(url_object)
 
-# Create meta data
+# create meta data
 metadata = MetaData()
 
+#create table
 Product = Table('product', metadata,
                 db.Column('Store Name', db.String),
                 db.Column('Product Name', db.String)
