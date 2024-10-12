@@ -1,38 +1,86 @@
-from bs4 import BeautifulSoup 
-
+from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+from webdriver_manager.chrome import ChromeDriverManager
+import sqlalchemy as db
 from sqlalchemy.engine import URL
-from sqlalchemy import create_engine
-import pandas as pd
-from psycopg2 import connect
-from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
-import requests
+from sqlalchemy import create_engine, Table, Column, String, MetaData
+import time
 
-#connect to database
-
+# Connect to database
 url_object = URL.create(
     "postgresql",
-    username="--------",#changed for security purposes
-    password="--------",  
-    host="localhost",
+    username="XXXXX",
+    password="XXXXX",
+    host="XXXXX",
     database="grocery_app_db",
 )
 
 engine = create_engine(url_object)
-conn = engine.connect
-#print("engine connected")
-#print engine created
-#conn = psycopg2.connect(database='grocery_app_db',user='-------', password='-------', port=5432)
-def scrape_product_names(): 
+
+# Create meta data
+metadata = MetaData()
+
+Product = Table('product', metadata,
+                db.Column('Store Name', db.String(255)),
+                db.Column('Product Name', db.String(255))
+                )
+metadata.create_all(engine)
+
+def setup_driver():
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")  # Run in headless mode
+    service = Service(ChromeDriverManager().install())
+    return webdriver.Chrome(service=service, options=chrome_options)
+
+def scrape_product_data():
+    driver = setup_driver()
+    url = "https://shop.newleaf.com/store/new-leaf-community-markets/storefront?_gl=1*ww7cgb*_ga*MTMzNDExODg5MS4xNzI4NTE2MTc4*_ga_SF49JN814F*MTcyODY5OTM5NS40LjAuMTcyODY5OTM5NS4wLjAuMA.."
     
-    scrape_page = requests.get("https://shop.newleaf.com/store/new-leaf-community-markets/storefront")
-    soup = BeautifulSoup(scrape_page.text, "html.parser")
-    product_names = soup.findAll('h2', attrs = {'class': 'e-9773mu'})
-   
-    for name in product_names:
-        print(name.text)
-    #define dataframe
+    try:
+        driver.get(url)
+        
+        # Scroll page
+        scroll_pause = 2
+        screen_height = driver.execute_script("return window.screen.height;")
+        print(screen_height)
+        i = 1
+        while True:
+            driver.execute_script(f"window.scrollTo(0,{screen_height * i});")
+            i += 1
+            time.sleep(scroll_pause)
+            scroll_height = driver.execute_script("return document.body.scrollHeight;")
+            print(scroll_height)
+            if screen_height * i > scroll_height:
+                break
+        
+        soup = BeautifulSoup(driver.page_source, "html.parser")
+        print("parsed")
+        
+        product_data = []
+        store_name = "New Leaf"
+        print(store_name)
+        
+        items = soup.find_all('h2', attrs={'class': 'e-9773mu'})
+        print(items)
+        for item in items:
+            product_data.append((store_name, item.text.strip()))
+        
+        return product_data
     
+    finally:
+        driver.quit() 
 
+def insert_products_to_db(product_data):
+    with engine.connect() as conn:
+        conn.execute(Product.insert(), [
+            {"Store Name": store, "Product Name": product}
+            for store, product in product_data
+        ])
+        conn.commit()
 
-scrape_product_names()
-
+if __name__ == "__main__":
+    product_data = scrape_product_data()
+    insert_products_to_db(product_data)
+    print(f"Inserted {len(product_data)} products into the database.")
