@@ -11,7 +11,7 @@ import time
 # Connect to database
 url_object = URL.create(
     "postgresql",
-    username="XXXXX",
+    username="XXXXXXX",
     password="XXXXX",
     host="XXXXX",
     database="grocery_app_db",
@@ -23,8 +23,8 @@ engine = create_engine(url_object)
 metadata = MetaData()
 
 Product = Table('product', metadata,
-                db.Column('Store Name', db.String(255)),
-                db.Column('Product Name', db.String(255))
+                db.Column('Store Name', db.String),
+                db.Column('Product Name', db.String)
                 )
 metadata.create_all(engine)
 
@@ -36,7 +36,7 @@ def setup_driver():
 
 def scrape_product_data():
     driver = setup_driver()
-    url = "https://shop.newleaf.com/store/new-leaf-community-markets/storefront?_gl=1*ww7cgb*_ga*MTMzNDExODg5MS4xNzI4NTE2MTc4*_ga_SF49JN814F*MTcyODY5OTM5NS40LjAuMTcyODY5OTM5NS4wLjAuMA.."
+    url = "https://shop.newleaf.com/store/new-leaf-community-markets/collections/rc-sales-flyer"
     
     try:
         driver.get(url)
@@ -63,9 +63,13 @@ def scrape_product_data():
         print(store_name)
         
         items = soup.find_all('h2', attrs={'class': 'e-9773mu'})
+        prices = soup.find_all('span', attrs = {'class':'screen-reader-only'})
         print(items)
         for item in items:
-            product_data.append((store_name, item.text.strip()))
+            product_data.append((store_name, item.text))
+            print(item.text)
+        for price in prices:
+            print(price.text)
         
         return product_data
     
@@ -82,5 +86,5 @@ def insert_products_to_db(product_data):
 
 if __name__ == "__main__":
     product_data = scrape_product_data()
-    insert_products_to_db(product_data)
-    print(f"Inserted {len(product_data)} products into the database.")
+   # insert_products_to_db(product_data)
+   # print(f"Inserted {len(product_data)} products into the database.")
