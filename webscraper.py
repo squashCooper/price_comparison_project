@@ -11,9 +11,9 @@ import time
 # connect to database
 url_object = URL.create(
     "postgresql",
-    username="XXXXXXX",
-    password="XXXXX",
-    host="XXXXX",
+    username="xxxxx",
+    password="xxxxx",
+    host="xxxx",
     database="grocery_app_db",
 )
 
@@ -25,9 +25,20 @@ metadata = MetaData()
 #create table
 Product = Table('product', metadata,
                 db.Column('Store Name', db.String),
-                db.Column('Product Name', db.String)
+                db.Column('Product Name', db.String),
+                db.Column('Price', db.String )
                 )
 metadata.create_all(engine)
+
+#making a list of websites to scrape
+
+websites = [
+    {   "url" : "https://shop.newleaf.com/store/new-leaf-community-markets/collections/rc-sales-flyer",
+        "name" : "New Leaf Community Markets",
+        "products": {'name': 'h2', 'class_': 'e-9773mu'},
+        "prices": {'name': 'div', 'class_': 'e-an4oxa'}
+    }
+]
 
 def setup_driver():
     chrome_options = Options()
@@ -35,57 +46,64 @@ def setup_driver():
     service = Service(ChromeDriverManager().install())
     return webdriver.Chrome(service=service, options=chrome_options)
 
-def scrape_product_data():
+#seperating functions to intake multiple websites
+def scroll_page(driver):
+    scroll_pause = 2
+    screen_height = driver.execute_script("return window.screen.height;")
+    print(screen_height)
+    i = 1
+    while True:
+        driver.execute_script(f"window.scrollTo(0,{screen_height * i});")
+        i += 1
+        time.sleep(scroll_pause)
+        scroll_height = driver.execute_script("return document.body.scrollHeight;")
+        print(scroll_height)
+        if screen_height * i > scroll_height:
+            break
+
+def scrape_website(driver, website):
+
+    #setup driver and get url
     driver = setup_driver()
-    url = "https://shop.newleaf.com/store/new-leaf-community-markets/collections/rc-sales-flyer"
+    driver.get(website['url'])
+    #scroll the page to get infro
+    scroll_page(driver)
+    #parse and find data
+    soup = BeautifulSoup(driver.page_source, "html.parser")
+    print("parsed")
+    product_data = []
+    items = soup.find_all(website['products']['name'], attrs={'class': website['products']['class_']})
+    prices = soup.find_all(website['prices']['name'], attrs={'class': website['prices']['class_']})
+    for item, price in zip(items, prices):
+        product_data.append((website['name'], item.text.strip(), price.text.strip()))
     
+    return product_data
+    
+   
+def scrape_all():
+    #get data for all sites by looping through website list 
+    driver = setup_driver()
+    all_data = []
+
     try:
-        driver.get(url)
-        
-        # Scroll page
-        scroll_pause = 2
-        screen_height = driver.execute_script("return window.screen.height;")
-        print(screen_height)
-        i = 1
-        while True:
-            driver.execute_script(f"window.scrollTo(0,{screen_height * i});")
-            i += 1
-            time.sleep(scroll_pause)
-            scroll_height = driver.execute_script("return document.body.scrollHeight;")
-            print(scroll_height)
-            if screen_height * i > scroll_height:
-                break
-        
-        soup = BeautifulSoup(driver.page_source, "html.parser")
-        print("parsed")
-        
-        product_data = []
-        store_name = "New Leaf"
-        print(store_name)
-        
-        items = soup.find_all('h2', attrs={'class': 'e-9773mu'})
-        prices = soup.find_all('span', attrs = {'class':'screen-reader-only'})
-        print(items)
-        for item in items:
-            product_data.append((store_name, item.text))
-            print(item.text)
-        for price in prices:
-            print(price.text)
-        
-        return product_data
-    
+        for website in websites:
+            print(f"scraping {website['name']}")
+            web_data = scrape_website(driver, website)
+            all_data.extend(web_data)
+            print(f"finished scraping {website['name']}. {len(web_data)} products found.")
     finally:
-        driver.quit() 
+        driver.quit()
+
 
 def insert_products_to_db(product_data):
     with engine.connect() as conn:
         conn.execute(Product.insert(), [
-            {"Store Name": store, "Product Name": product}
-            for store, product in product_data
+            {"Store Name": store, "Product Name": product, "Price": price}
+            for store, product, price in product_data
         ])
         conn.commit()
 
 if __name__ == "__main__":
-    product_data = scrape_product_data()
+    product_data = scrape_all()
    # insert_products_to_db(product_data)
    # print(f"Inserted {len(product_data)} products into the database.")
