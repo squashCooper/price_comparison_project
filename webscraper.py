@@ -11,9 +11,9 @@ import time
 # connect to database
 url_object = URL.create(
     "postgresql",
-    username="xxxxx",
-    password="xxxxx",
-    host="xxxx",
+    username="XXXXX",
+    password="XXXXX",
+    host="XXXXX",
     database="grocery_app_db",
 )
 
@@ -24,9 +24,8 @@ metadata = MetaData()
 
 #create table
 Product = Table('product', metadata,
-                db.Column('Store Name', db.String),
-                db.Column('Product Name', db.String),
-                db.Column('Price', db.String )
+                db.Column('Store Name', db.String(255)),
+                db.Column('Product Name', db.String(255))
                 )
 metadata.create_all(engine)
 
@@ -46,38 +45,40 @@ def setup_driver():
     service = Service(ChromeDriverManager().install())
     return webdriver.Chrome(service=service, options=chrome_options)
 
-#seperating functions to intake multiple websites
-def scroll_page(driver):
-    scroll_pause = 2
-    screen_height = driver.execute_script("return window.screen.height;")
-    print(screen_height)
-    i = 1
-    while True:
-        driver.execute_script(f"window.scrollTo(0,{screen_height * i});")
-        i += 1
-        time.sleep(scroll_pause)
-        scroll_height = driver.execute_script("return document.body.scrollHeight;")
-        print(scroll_height)
-        if screen_height * i > scroll_height:
-            break
-
-def scrape_website(driver, website):
-
-    #setup driver and get url
+def scrape_product_data():
     driver = setup_driver()
-    driver.get(website['url'])
-    #scroll the page to get infro
-    scroll_page(driver)
-    #parse and find data
-    soup = BeautifulSoup(driver.page_source, "html.parser")
-    print("parsed")
-    product_data = []
-    items = soup.find_all(website['products']['name'], attrs={'class': website['products']['class_']})
-    prices = soup.find_all(website['prices']['name'], attrs={'class': website['prices']['class_']})
-    for item, price in zip(items, prices):
-        product_data.append((website['name'], item.text.strip(), price.text.strip()))
+    url = "https://shop.newleaf.com/store/new-leaf-community-markets/storefront?_gl=1*ww7cgb*_ga*MTMzNDExODg5MS4xNzI4NTE2MTc4*_ga_SF49JN814F*MTcyODY5OTM5NS40LjAuMTcyODY5OTM5NS4wLjAuMA.."
     
-    return product_data
+    try:
+        driver.get(url)
+        
+        # Scroll page
+        scroll_pause = 2
+        screen_height = driver.execute_script("return window.screen.height;")
+        print(screen_height)
+        i = 1
+        while True:
+            driver.execute_script(f"window.scrollTo(0,{screen_height * i});")
+            i += 1
+            time.sleep(scroll_pause)
+            scroll_height = driver.execute_script("return document.body.scrollHeight;")
+            print(scroll_height)
+            if screen_height * i > scroll_height:
+                break
+        
+        soup = BeautifulSoup(driver.page_source, "html.parser")
+        print("parsed")
+        
+        product_data = []
+        store_name = "New Leaf"
+        print(store_name)
+        
+        items = soup.find_all('h2', attrs={'class': 'e-9773mu'})
+        print(items)
+        for item in items:
+            product_data.append((store_name, item.text.strip()))
+        
+        return product_data
     
    
 def scrape_all():
@@ -104,6 +105,6 @@ def insert_products_to_db(product_data):
         conn.commit()
 
 if __name__ == "__main__":
-    product_data = scrape_all()
-   # insert_products_to_db(product_data)
-   # print(f"Inserted {len(product_data)} products into the database.")
+    product_data = scrape_product_data()
+    insert_products_to_db(product_data)
+    print(f"Inserted {len(product_data)} products into the database.")
