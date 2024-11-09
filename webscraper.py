@@ -11,9 +11,9 @@ import time
 # connect to database
 url_object = URL.create(
     "postgresql",
-    username="xxxx",
-    password="xxx",
-    host="xxxxxx",
+    username="x",
+    password="x",
+    host="x",
     database="grocery_app_db",
 )
 
