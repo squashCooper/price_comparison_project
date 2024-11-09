@@ -11,9 +11,9 @@ import time
 # connect to database
 url_object = URL.create(
     "postgresql",
-    username="squash",
-    password="Hopkins123",
-    host="10.0.0.221",
+    username="xxxx",
+    password="xxx",
+    host="xxxxxx",
     database="grocery_app_db",
 )
 
@@ -147,26 +147,7 @@ def setup_driver():
     return webdriver.Chrome(service=service, options=chrome_options)
 
 def scroll_page(driver, website):
-    # Special handling for Safeway
-    if website['name'] == "Safeway":
-        try:
-            time.sleep(5)  # Initial wait for JavaScript
-            last_height = driver.execute_script("return document.body.scrollHeight")
-            
-            while True:
-                # Scroll down slowly for Safeway
-                driver.execute_script("window.scrollBy(0, 300);")
-                time.sleep(1)  # Shorter pause between scrolls
-                
-                new_height = driver.execute_script("return document.body.scrollHeight")
-                if new_height == last_height:
-                    break
-                last_height = new_height
-                
-        except Exception as e:
-            print(f"Error scrolling Safeway: {str(e)}")
-    else:
-        # original scroll logic for other sites
+     
         scroll_pause = 2
         screen_height = driver.execute_script("return window.screen.height;")
         i = 1
