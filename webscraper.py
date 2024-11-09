@@ -11,9 +11,9 @@ import time
 # connect to database
 url_object = URL.create(
     "postgresql",
-    username="xxxx",
-    password="xxxx",
-    host="xxxx",
+    username="squash",
+    password="Hopkins123",
+    host="10.0.0.221",
     database="grocery_app_db",
 )
 
@@ -26,35 +26,83 @@ metadata = MetaData()
 Product = Table('product', metadata,
                 db.Column('Store Name', db.String),
                 db.Column('Product Name', db.String),
-                db.Column('Price', db.String )
+                db.Column('Price', db.String ),
+                db.Column('Category', db.String)
                 )
 metadata.create_all(engine)
 
-#making a list of websites to scrape
+#creating store configs for easy linking 
 
-websites = [
+store_configs = {
+    
+    "new_leaf": {
+    "base_url": "https://shop.newleaf.com/store/new-leaf-community-markets/collections/",
+    "name": "New Leaf Community Markets",
+    "selectors": {
+    "products": {'name': 'h2', 'class_': 'e-147kl2c'},
+    "prices": {'name': 'div', 'class_': 'e-an4oxa'}
+        },
+        "categories": {
+            "sales": "rc-sales-flyer",
+            "produce": "n-produce-42",
+            "meat_seafood": "n-meat-seafood-62",
+            "coffee_juice_bar": "n-coffee-juice-bar-88",
+            "vitamins_supplements": "n-vitamins-supplements-80",  
+            "sushi_poke": "n-sushi-poke-7",
+            "deli": "n-deli-73",
+            "dairy_eggs": "n-dairy-eggs-90",
+            "alcohol": "n-beer-wine-spirits-92", 
+            "bakery" : "n-bakery-18", 
+            "body_care": "n-body-care-65", 
+            "beverages": "n-beverages-70", 
+            "canned_goods": "n-canned-goods-66", 
+            "dry_goods": "n-dry-goods-pasta-46", 
+            "frozen": "n-frozen-52", 
+            "snacks": "n-snacks-60",
+            "baby": "n-baby-toddler-90",
+            "pets": "n-pets-85",
+            "household": "n-household-85", 
+            "housewares" : "n-housewares-0", 
+            "breakfast" : "n-breakfast-56", 
+            "bulk" : "n-bulk-29", 
+            "pantry" : "n-pantry-95", 
+            "international" : "n-international-44"
+
+        }
+    },
+}
+
+
+
+websites = []
+for store, config in store_configs.items():
+    for category, path in config["categories"].items():
+        websites.append({
+        "url":config["base_url"] + path, 
+        "name": config["name"],
+        "products": config["selectors"]["products"],
+        "prices": config["selectors"]["prices"],
+        "category": category
+        })
   
       #safeway, deal with "load more button "
-      {
-          "url" : "https://www.safeway.com/order/fall/events-holidays/all-produce.html",
-          "name" : "Safeway",
-          "products":{'name': 'a', 'class_': 'product-title__name'},
-          "prices" : {'name': 'div', 'class_': 'product-title__qty'}
+    #  {
+     #     "url" : "https://www.safeway.com/order/fall/events-holidays/all-produce.html",
+      #    "name" : "Safeway",
+       #   "products":{'name': 'a', 'class_': 'product-title__name'},
+        #  "prices" : {'name': 'div', 'class_': 'product-title__qty'}
   
-      },
-       {
-         "url" : "https://shop.newleaf.com/store/new-leaf-community-markets/collections/rc-sales-flyer",
-         "name" : "New Leaf Community Markets",
-         "products": {'name': 'h2', 'class_': 'e-147kl2c'},
-        "prices": {'name': 'div', 'class_': 'e-an4oxa'}
-    },
+         # },
+
+    # new leaf 
+
       #trader joes, deal with spaces in class names
-      {
-          "url" : "https://www.traderjoes.com/home/products/category/sliced-bread-14",
-          "name": "Trader Joes",
-          "products" : {'name' : 'a', 'class_': 'Link_link__1AZfr.ProductCard_card__title__301JH.ProductCard_card__title__large__3bAY6'},
-          "prices" : {'name' : 'span', 'class_': 'ProductPrice_productPrice__price__3-50j'}
-      },
+     # {
+      #    "url" : "https://www.traderjoes.com/home/products/category/sliced-bread-14",
+      #   "name": "Trader Joes",
+      #    "products" : {'name' : 'a', 'class_': 'Link_link__1AZfr.ProductCard_card__title__301JH.ProductCard_card__title__large__3bAY6'},
+     #     "prices" : {'name' : 'span', 'class_': 'ProductPrice_productPrice__price__3-50j'}
+     # },
   
   
       #grocery outlet, go in store and check if instacart prices are accurate
@@ -69,13 +117,13 @@ websites = [
   
     #  }
       #whole foods, problems with displaying prices
-      {
-          "url" : "https://www.wholefoodsmarket.com/products/produce",
-          "name" : "Whole Foods",
-          "products" : {'name': 'h2', 'class_' : 'w-cms--font-body__sans-bold'},
-          "prices" : {'name': 'span', 'class_' : 'text-left.bds--heading-5'}
+    #  {
+     #     "url" : "https://www.wholefoodsmarket.com/products/produce",
+      #    "name" : "Whole Foods",
+       #   "products" : {'name': 'h2', 'class_' : 'w-cms--font-body__sans-bold'},
+        #  "prices" : {'name': 'span', 'class_' : 'text-left.bds--heading-5'}
   
-      }
+#      }
       #nob hills, spaces in class
      # {
   
@@ -85,7 +133,7 @@ websites = [
         #  "prices" : {'name': '', 'class_' : ''}
   
      # }
-  ]
+ # ]
   
 
 
@@ -132,29 +180,31 @@ def scroll_page(driver, website):
 
 def scrape_website(driver, website):
     try:
-        print(f"Starting to scrape {website['name']}")
+        print(f"Scraping {website['name']} - {website['category']}")
         driver.get(website['url'])
-        
-        #error handling because safeway is being weird 
-        time.sleep(3)
         scroll_page(driver, website)
         
         soup = BeautifulSoup(driver.page_source, "html.parser")
-        print(f"Parsed {website['name']}")
+        print(f"Parsed {website['name']} - {website['category']}")
         
         product_data = []
         items = soup.find_all(website['products']['name'], class_=website['products']['class_'])
         prices = soup.find_all(website['prices']['name'], class_=website['prices']['class_'])
         
-        print(f"Found {len(items)} items and {len(prices)} prices for {website['name']}")
-        
         for item, price in zip(items, prices):
-            product_data.append((website['name'], item.text.strip(), price.text.strip()))
+            # Include category in the data
+            product_data.append((
+                website['name'],
+                item.text.strip(),
+                price.text.strip(),
+                website['category']
+            ))
             
+        print(f"Found {len(product_data)} products in {website['category']}")
         return product_data
         
     except Exception as e:
-        print(f"Error scraping {website['name']}: {str(e)}")
+        print(f"Error scraping {website['name']} - {website['category']}: {str(e)}")
         return []
 
 def scrape_all():
