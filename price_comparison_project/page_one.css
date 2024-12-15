@@ -1,0 +1,52 @@
+
+h1{
+    padding-top: 40px;
+    font-weight: bold;
+    font-size: 200%;
+    text-align: center;
+    color: rgb(0, 80, 44);
+    font-family: 'Sans-serif', Ariel, monospace;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+h2{
+    font-weight: bold; 
+    text-align: left;
+    font-size: 100%;
+    color: rgb(0, 80, 44);
+    font-family: 'Sans-serif', Ariel, monospace;
+    padding-left: 20px;
+    padding-right: 20px;
+
+}
+
+.start_button {
+    background-color: #62a975; 
+    border: 3px solid #2a4b33;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .start_button:hover {
+    background-color: #497f57; 
+}
+
+.start_button:active {
+    background-color: #2a4b33; 
+}
+
+body {
+    background-image: url('price_comparison_project/toris_fruit.jpg');
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
