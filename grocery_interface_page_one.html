@@ -1,0 +1,39 @@
+<!-- Include a sitewide CSS file for consistent styling across the site -->
+<link rel="stylesheet" type="text/css" href="../css/site.css">
+<link rel="stylesheet" type="text/css" href="price_comparison_project/page_one.css">
+
+<!DOCTYPE html>
+<html>
+
+<head> 
+    <title>SlugSaver</title>
+    
+  
+
+</head>
+<body>
+    <style>
+        body {
+            background-image: url('price_comparison_project/toris_fruit.jpg');
+            background-size: cover;
+        }
+    </style>
+
+    <h1>Welcome to SlugSaver!</h1>
+    <h2>SlugSaver is an application designed to help you save money on your 
+    groceries. Simply enter your grocery list and this will generate the cheapest store for your list. 
+    This is currently based in Santa Cruz but will expand to other locations in the future. 
+    </h2>
+
+<form> 
+    <button class = "start_button" type = "button" onclick = "move_to_page_two()">Get Started!</button>
+    
+</form>
+<script>
+    function move_to_page_two(){
+    window.location.href = 'grocery_page_two.html';
+}
+</script>
+</body>    
+
+</html>
